@@ -59,15 +59,45 @@ def solve_p1(root: Dir):
 
         return size
 
-    find_dirs_p1(root)
+    root_size = find_dirs_p1(root)
 
-    return acc
+    return acc, root_size
+
+
+def solve_p2(root: Dir, root_size: int):
+    total = 70000000
+    target = 30000000
+    have = total - root_size
+    need = target - have
+
+    min_size: int | None = None
+
+    def find_dirs_p2(d: Dir):
+        nonlocal min_size
+
+        size = 0
+        for child in d.children.values():
+            if hasattr(child, "size"):
+                size += child.size
+            else:
+                size += find_dirs_p2(child)
+
+        if size > need and (min_size is None or min_size > size):
+            min_size = size
+
+        return size
+
+    find_dirs_p2(root)
+
+    return min_size
 
 
 def main():
     with open('input.txt') as f:
         tree = build_tree(f)
-        print(solve_p1(tree))
+        size, root_size = solve_p1(tree)
+        print("[P1]", size)
+        print("[P2]", solve_p2(tree, root_size))
 
 
 if __name__ == "__main__":
