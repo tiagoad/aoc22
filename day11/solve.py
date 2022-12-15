@@ -1,14 +1,15 @@
 import re
+from functools import reduce
 
 
-def main():
+def parse_monkeys():
     with open("input.txt") as f:
         data = f.read()
 
     mit = re.finditer(
         r"""Monkey (?P<id>[0-9]+):
   Starting items: (?P<starting_items>(?:[0-9]+(?:, )?)+)
-  Operation: new = (?P<op_a>\w+) (?P<op_sym>[*+]) (?P<op_b>\w+)
+  Operation: new = old (?P<op_sym>[*+]) (?P<op_v>\w+)
   Test: divisible by (?P<test>[0-9]+)
     If true: throw to monkey (?P<true_mnk>[0-9]+)
     If false: throw to monkey (?P<false_mnk>[0-9]+)""",
@@ -19,8 +20,7 @@ def main():
     for m in mit:
         g = m.groupdict()
         g["items"] = list(map(int, g["starting_items"].split(", ")))
-        g["op_a"] = None if g["op_a"] == "old" else int(g["op_a"])
-        g["op_b"] = None if g["op_b"] == "old" else int(g["op_b"])
+        g["op_v"] = None if g["op_v"] == "old" else int(g["op_v"])
         g["true_mnk"] = int(g["true_mnk"])
         g["false_mnk"] = int(g["false_mnk"])
         g["test"] = int(g["test"])
@@ -28,35 +28,40 @@ def main():
 
         monkeys.append(g)
 
-    for i in range(20):
+    return monkeys
+
+
+def get_monkey_business(monkeys, part):
+    divisor_product = reduce(lambda x, y: x*y, map(lambda m: m["test"], monkeys))
+
+    for i in range(20 if part == 1 else 10000):
         for m in monkeys:
-            print(f"Monkey {m['id']}:")
-            if len(m["items"]) == 0:
-                print("  does nothing")
             while len(m["items"]) > 0:
                 it = m["items"].pop(0)
-                print(f"  inspects {it}")
+
                 m["inspect_count"] += 1
 
-                a = m["op_a"] if m["op_a"] else it
-                b = m["op_b"] if m["op_b"] else it
+                a = it
+                b = m["op_v"]
+                if b is not None:
+                    if m["op_sym"] == "*":
+                        it = a * b
+                    else:
+                        it = a + b
+                else:
+                    it = it * it
 
-                it = a + b if m["op_sym"] == "+" else a * b
-                print(f"    {a} {m['op_sym']} {b} = {it}")
-
-                it = it // 3
-                print(f"    worry / 3 = {it}")
+                if part == 1:
+                    it = it // 3
+                else:
+                    it = divisor_product + it % divisor_product
 
                 if it % m["test"] == 0:
-                    print(f"    divisible by {m['test']}")
-
-                    monkeys[m["true_mnk"]]["items"].append(it)
-                    print(f"    item {it} -> monkey {m['true_mnk']}")
+                    next_m = monkeys[m["true_mnk"]]
                 else:
-                    print(f"    not divisible by {m['test']}")
+                    next_m = monkeys[m["false_mnk"]]
 
-                    monkeys[m["false_mnk"]]["items"].append(it)
-                    print(f"    item {it} -> monkey {m['false_mnk']}")
+                next_m["items"].append(it)
 
     by_inspect_count = sorted(monkeys, key=lambda m: m["inspect_count"], reverse=True)
 
@@ -64,7 +69,12 @@ def main():
     for m in by_inspect_count[:2]:
         monkey_business *= m["inspect_count"]
 
-    print("[P1]", monkey_business)
+    return monkey_business
+
+
+def main():
+    print("[P1]", get_monkey_business(parse_monkeys(), part=1))
+    print("[P2]", get_monkey_business(parse_monkeys(), part=2))
 
 
 if __name__ == "__main__":
