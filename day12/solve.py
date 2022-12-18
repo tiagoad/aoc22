@@ -56,6 +56,19 @@ def main():
 
     print(f"[P1] {len(path)-1}")
 
+    # I could run dijkstra just once, but I'm being lazy
+    starts = []
+    for y, x in np.ndindex(m.shape):
+        if m[y, x] == 0:
+            starts.append((x, y))
+    solves = []
+    for s in starts:
+        try:
+            solves.append(len(solve(m, s, end)) - 1)
+        except TypeError:
+            continue
+    print(f"[P2] {min(solves)}")
+
 
 if __name__ == "__main__":
     main()
