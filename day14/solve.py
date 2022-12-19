@@ -1,55 +1,57 @@
-import json
-
 import numpy as np
 
-W = 85
+W = 500
 H = 172
-OFFSET_X = 457
-OFFSET_Y = -1
+OFFSET_X = 250
+OFFSET_Y = 0
+SOURCE_X = 500
 
 
 def main():
-    m = get_map()
-    steps = simulate(m)
-    print(f"[P1] {steps}")
+    m, max_y = get_map()
+
+    steps_p1 = simulate(m.copy())
+    print(f"[P1] {steps_p1}")
+
+    draw_line(m, 0, max_y + 2, W - 1, max_y + 2)
+    steps_p2 = simulate(m.copy())
+    print(f"[P2] {steps_p2}")
 
 
 def simulate(m):
     it = 0
-    while add_sand(m, *offset(500, 0)):
+    while add_sand(m, *offset(SOURCE_X, 0)):
         it += 1
-        print(f"== {it} ==")
+        # print(f"== {it} ==")
         # print_map(m)
-        print()
-    print_map(m)
+        # print()
     return it
 
 
-def add_sand(m, x, y, final=False):
+def add_sand(m, x, y):
+    if m[y, x] == "o":
+        return False
+
     m[y, x] = "+"
-    orig_x, orig_y = x, y
 
     try:
         while True:
             if m[y + 1, x] == ".":
                 y, x = y + 1, x
 
-            elif m[y + 1, x - 1] == ".":
+            elif x > 0 and m[y + 1, x - 1] == ".":
                 y, x = y + 1, x - 1
 
-            elif m[y + 1, x + 1] == ".":
+            elif x < W - 1 and m[y + 1, x + 1] == ".":
                 y, x = y + 1, x + 1
 
             else:
                 m[y, x] = "o"
                 return True
 
-            if final:
-                m[y, x] = "~"
-
     except IndexError:
-        if not final:
-            add_sand(m, orig_x, orig_y, final=True)
+        # if not final:
+        #    add_sand(m, orig_x, orig_y, final=True)
         return False
 
 
@@ -78,6 +80,7 @@ def draw_line(m, x1, y1, x2, y2):
 
 def get_map():
     m = np.full((H, W), ".")
+    max_y = 0
 
     with open("input.txt") as f:
         for l in f:
@@ -86,9 +89,12 @@ def get_map():
             for x2, y2 in steps:
                 draw_line(m, *offset(x1, y1), *offset(x2, y2))
 
+                if y2 > max_y:
+                    max_y = y2
+
                 x1, y1 = x2, y2
 
-    return m
+    return m, max_y
 
 
 def print_map(m):
@@ -96,6 +102,7 @@ def print_map(m):
         for c in l:
             print(end=c)
         print()
+    print()
 
 
 if __name__ == "__main__":
